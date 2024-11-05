@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ficha do Colaborador</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <main>
+        <h1>Ficha do Colaborador</h1>
+        <button onclick="toggleDarkMode()" class="dark-mode-toggle">Modo Noturno</button>
+        <h2>
+            <p>SENHA DE REDE: Acesso@2024</p>
+            <p>Novo Telefone: </p>
+        </h2>
+        <hr>
+        <h2>Ficha dos Colaboradores</h2>
+        <hr>
+        <div id="colaboradores">
+            <div class="colaborador">
+                <ol>
+                    <h2>
+                        <li>Nome: <input type="text" name="nome"></li>
+                        <li>Telefone: <input type="text" name="telefone"></li>
+                        <li>Email: <input type="text" name="email"></li>
+                        <li>Matrícula: <input type="text" name="matricula"></li>
+                        <li>CPF: <input type="text" name="cpf"></li>
+                        <li>Descrição do Trabalho: <input type="text" name="descricao"></li>
+                        <li>Chamado Aberto?: 
+                            <button type="button" onclick="toggleChamado(this)">Não</button>
+                        </li>
+                    </h2>
+                </ol>
+                <hr>
+            </div>
+        </div>
+        <div class="navigation-buttons">
+            <button onclick="previousList()">Lista Anterior</button>
+            <button onclick="nextList()">Próxima Lista</button>
+        </div>
+        <div class="counter" id="counter">Lista 1 de 1</div>
+        <div class="action-buttons">
+            <button onclick="clearTable()">Limpar Tabela</button>
+            <button onclick="saveToFile()">Salvar em .txt</button>
+        </div>
+    </main>
+    <footer>
+        <p>Criado por Ofelpsss</p>
+    </footer>
+    <script>
+        document.addEventListener('input', function(event) {
+            if (event.target.tagName === 'INPUT') {
+                saveData();
+                checkAndAddNewList();
+            }
+        });
+
+        function toggleChamado(button) {
+            button.textContent = button.textContent === 'Sim' ? 'Não' : 'Sim';
+            saveData();
+        }
+
+        function saveData() {
+            const colaboradores = document.querySelectorAll('.colaborador');
+            const data = [];
+
+            colaboradores.forEach(colaborador => {
+                const inputs = colaborador.querySelectorAll('input');
+                const colaboradorData = {};
+
+                inputs.forEach(input => {
+                    colaboradorData[input.name] = input.value;
+                });
+
+                const chamadoButton = colaborador.querySelector('button');
+                colaboradorData['chamado'] = chamadoButton.textContent;
+
+                data.push(colaboradorData);
+            });
+
+            localStorage.setItem('colaboradores', JSON.stringify(data));
+        }
+
+        function loadSavedData() {
+            const savedData = JSON.parse(localStorage.getItem('colaboradores'));
+            if (savedData) {
+                const colaboradores = document.getElementById('colaboradores');
+                colaboradores.innerHTML = '';
+
+                savedData.forEach(colaboradorData => {
+                    const newColaborador = document.createElement('div');
+                    newColaborador.classList.add('colaborador');
+                    newColaborador.innerHTML = `
+                        <ol>
+                            <h2>
+                                <li>Nome: <input type="text" name="nome" value="${colaboradorData.nome || ''}"></li>
+                                <li>Telefone: <input type="text" name="telefone" value="${colaboradorData.telefone || ''}"></li>
+                                <li>Email: <input type="text" name="email" value="${colaboradorData.email || ''}"></li>
+                                <li>Matrícula: <input type="text" name="matricula" value="${colaboradorData.matricula || ''}"></li>
+                                <li>CPF: <input type="text" name="cpf" value="${colaboradorData.cpf || ''}"></li>
+                                <li>Descrição do Trabalho: <input type="text" name="descricao" value="${colaboradorData.descricao || ''}"></li>
+                                <li>Chamado Aberto?: 
+                                    <button type="button" onclick="toggleChamado(this)">${colaboradorData.chamado || 'Não'}</button>
+                                </li>
+                            </h2>
+                        </ol>
+                        <hr>
+                    `;
+                    colaboradores.appendChild(newColaborador);
+                });
+                updateCounter();
+                showList(0);
+            }
+        }
+
+        function clearTable() {
+            localStorage.removeItem('colaboradores');
+            document.getElementById('colaboradores').innerHTML = `
+                <div class="colaborador">
+                    <ol>
+                        <h2>
+                            <li>Nome: <input type="text" name="nome"></li>
+                            <li>Telefone: <input type="text" name="telefone"></li>
+                            <li>Email: <input type="text" name="email"></li>
+                            <li>Matrícula: <input type="text" name="matricula"></li>
+                            <li>CPF: <input type="text" name="cpf"></li>
+                            <li>Descrição do Trabalho: <input type="text" name="descricao"></li>
+                            <li>Chamado Aberto?: 
+                                <button type="button" onclick="toggleChamado(this)">Não</button>
+                            </li>
+                        </h2>
+                    </ol>
+                    <hr>
+                </div>
+            `;
+            updateCounter();
+            showList(0);
+        }
+
+        function saveToFile() {
+            const colaboradores = JSON.parse(localStorage.getItem('colaboradores'));
+            if (colaboradores) {
+                let text = '';
+                colaboradores.forEach((colaborador, index) => {
+                    text += `Colaborador ${index + 1}:\n`;
+                    for (const key in colaborador) {
+                        text += `${key}: ${colaborador[key]}\n`;
+                    }
+                    text += '\n';
+                });
+
+                const blob = new Blob([text], { type: 'text/plain' });
+                const anchor = document.createElement('a');
+                anchor.href = URL.createObjectURL(blob);
+                anchor.download = 'colaboradores.txt';
+                anchor.click();
+            }
+        }
+
+        function previousList() {
+            const colaboradores = document.querySelectorAll('.colaborador');
+            const currentIndex = Array.from(colaboradores).findIndex(colaborador => colaborador.classList.contains('visible'));
+            if (currentIndex > 0) {
+                colaboradores[currentIndex].classList.remove('visible');
+                colaboradores[currentIndex].classList.add('hidden-right');
+                setTimeout(() => {
+                    colaboradores[currentIndex].style.display = 'none';
+                    colaboradores[currentIndex].classList.remove('hidden-right');
+                    showList(currentIndex - 1);
+                }, 500);
+            }
+        }
+
+        function nextList() {
+            const colaboradores = document.querySelectorAll('.colaborador');
+            const currentIndex = Array.from(colaboradores).findIndex(colaborador => colaborador.classList.contains('visible'));
+            if (currentIndex < colaboradores.length - 1) {
+                colaboradores[currentIndex].classList.remove('visible');
+                colaboradores[currentIndex].classList.add('hidden-left');
+                setTimeout(() => {
+                    colaboradores[currentIndex].style.display = 'none';
+                    colaboradores[currentIndex].classList.remove('hidden-left');
+                    showList(currentIndex + 1);
+                }, 500);
+            } else {
+                addNewList();
+            }
+        }
+
+        function addNewList() {
+            const colaboradores = document.getElementById('colaboradores');
+            const newColaborador = document.createElement('div');
+            newColaborador.classList.add('colaborador');
+            newColaborador.innerHTML = `
+                <ol>
+                    <h2>
+                        <li>Nome: <input type="text" name="nome"></li>
+                        <li>Telefone: <input type="text" name="telefone"></li>
+                        <li>Email: <input type="text" name="email"></li>
+                        <li>Matrícula: <input type="text" name="matricula"></li>
+                        <li>CPF: <input type="text" name="cpf"></li>
+                        <li>Descrição do Trabalho: <input type="text" name="descricao"></li>
+                        <li>Chamado Aberto?: 
+                            <button type="button" onclick="toggleChamado(this)">Não</button>
+                        </li>
+                    </h2>
+                </ol>
+                <hr>
+            `;
+            colaboradores.appendChild(newColaborador);
+            showList(colaboradores.children.length - 1);
+            updateCounter();
+        }
+
+        function showList(index) {
+            const colaboradores = document.querySelectorAll('.colaborador');
+            colaboradores.forEach((colaborador, i) => {
+                colaborador.style.display = i === index ? 'block' : 'none';
+                if (i === index) {
+                    colaborador.classList.add('visible');
+                } else {
+                    colaborador.classList.remove('visible');
+                }
+            });
+            updateCounter(index);
+        }
+
+        function updateCounter(index = 0) {
+            const total = document.querySelectorAll('.colaborador').length;
+            document.getElementById('counter').textContent = `Lista ${index + 1} de ${total}`;
+        }
+
+        window.onload = function() {
+            loadSavedData();
+            const colaboradores = document.querySelectorAll('.colaborador');
+            colaboradores.forEach((colaborador, index) => {
+                colaborador.style.display = index === 0 ? 'block' : 'none';
+                if (index === 0) {
+                    colaborador.classList.add('visible');
+                }
+            });
+        };
+        function clearTable() {
+            const confirmation = prompt("Tem certeza de que deseja limpar a tabela? Digite 'sim' para confirmar.");
+            if (confirmation === 'sim') {
+                localStorage.removeItem('colaboradores');
+                document.getElementById('colaboradores').innerHTML = `
+                    <div class="colaborador">
+                        <ol>
+                            <h2>
+                                <li>Nome: <input type="text" name="nome"></li>
+                                <li>Telefone: <input type="text" name="telefone"></li>
+                                <li>Email: <input type="text" name="email"></li>
+                                <li>Matrícula: <input type="text" name="matricula"></li>
+                                <li>CPF: <input type="text" name="cpf"></li>
+                                <li>Descrição do Trabalho: <input type="text" name="descricao"></li>
+                                <li>Chamado Aberto?: 
+                                    <button type="button" onclick="toggleChamado(this)">Não</button>
+                                </li>
+                            </h2>
+                        </ol>
+                        <hr>
+                    </div>
+                `;
+                updateCounter();
+                showList(0);
+                alert("Tabela limpa com sucesso!");
+            } else {
+                alert("Ação cancelada. A tabela não foi limpa.");
+            }
+        }
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            localStorage.setItem('darkMode', isDarkMode);  
+        }
+
+        window.onload = function() {
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.body.classList.add('dark-mode');
+            }
+            loadSavedData();  
+            const colaboradores = document.querySelectorAll('.colaborador');
+            colaboradores.forEach((colaborador, index) => {
+                colaborador.style.display = index === 0 ? 'block' : 'none';
+                if (index === 0) {
+                    colaborador.classList.add('visible');
+                }
+            });
+        };
+
+    </script>            
+</body>
+</html>
